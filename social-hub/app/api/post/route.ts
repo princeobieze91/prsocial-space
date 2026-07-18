@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Formulate the highly structured structural prompt for the AI
-    const systemInstruction = 
+    const systemInstruction =
       "You are an expert social media content writer. " +
       "You output ONLY structured JSON with exact platform optimizations. " +
       "Do not include any Markdown syntax wrappers, no backticks (```), and no extra trailing symbols outside the JSON schema.";
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     const prompt = `
       Topic: "${topic}"
       Tone of voice: "${tone || "professional"}"
-      
+
       Generate highly optimized social media copy matching this topic and tone. Your output must strictly be a JSON object containing these keys:
       {
         "linkedin": "A professional post outlining insights, lessons, or stories. Max 500 characters. Use bullet points and appropriate spacing.",
@@ -47,10 +47,12 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            responseMimeType: "application/json"
+            responseMimeType: "application/json",
           },
-          systemInstruction: { parts: [{ text: systemInstruction }] }
+          systemInstruction: { parts: [{ text: systemInstruction }] },
         }),
+        // Don't let a slow upstream hang the request.
+        signal: AbortSignal.timeout(15_000),
       }
     );
 
@@ -66,12 +68,18 @@ export async function POST(req: Request) {
       throw new Error("No output response returned from Gemini.");
     }
 
-    // 5. Safely clean and parse JSON response payload
-    const cleanedText = rawText.trim().replace(/^```json/, "").replace(/```$/, "");
+    // 5. Safely clean and parse JSON response payload (strip any ``` fences)
+    const cleanedText = rawText
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/, "");
     const parsedData = JSON.parse(cleanedText);
 
     return NextResponse.json(parsedData);
   } catch (error: any) {
+    if (error?.name === "TimeoutError") {
+      return NextResponse.json({ error: "Gemini request timed out." }, { status: 504 });
+    }
     console.error("Backend Post API Error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to generate social media content" },
@@ -81,11 +89,11 @@ export async function POST(req: Request) {
 }
 
 export function GET() {
-  return NextResponse.json({
-    error: "Method Not Allowed",
-  }, {
-    status: 405,
-    headers: { Allow: "POST" },
-  }
-);
+  return NextResponse.json(
+    { error: "Method Not Allowed" },
+    {
+      status: 405,
+      headers: { Allow: "POST" },
+    }
+  );
 }

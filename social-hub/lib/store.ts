@@ -7,6 +7,8 @@ export interface PostRecord {
   user_id: string;
   caption: string;
   social_account_ids: string[];
+  media_urls?: string[] | null;
+  scheduled_at?: string | null;
   status: string;
   created_at: string;
 }
@@ -23,6 +25,8 @@ export async function recordPost(record: {
   user_id: string;
   caption: string;
   social_account_ids: string[];
+  media_urls?: string[];
+  scheduled_at?: string;
   status: string;
 }) {
   const supabaseAdmin = getSupabaseAdmin();
@@ -33,6 +37,8 @@ export async function recordPost(record: {
       user_id: record.user_id,
       caption: record.caption,
       social_account_ids: record.social_account_ids,
+      media_urls: record.media_urls ?? null,
+      scheduled_at: record.scheduled_at ?? null,
       status: record.status,
     })
     .select()
@@ -69,13 +75,18 @@ export async function recordAccountConnected(entry: {
   platform: string;
 }) {
   const supabaseAdmin = getSupabaseAdmin();
+  // Upsert on (user_id, account_id) so duplicate webhook deliveries don't
+  // create repeat rows.
   const { data, error } = await supabaseAdmin
     .from("connected_account_events")
-    .insert({
-      user_id: entry.userId,
-      account_id: entry.accountId,
-      platform: entry.platform,
-    })
+    .upsert(
+      {
+        user_id: entry.userId,
+        account_id: entry.accountId,
+        platform: entry.platform,
+      },
+      { onConflict: "user_id,account_id" }
+    )
     .select()
     .single();
 

@@ -22,11 +22,11 @@ export default async function Home() {
         Me, then publish everywhere from a single composer.
       </p>
       <div className="mt-8 flex gap-3">
-        <Link href="/sign-in" className="btn-primary">
-          Sign in
+        <Link href="/dashboard" className="btn-primary">
+          Go to dashboard
         </Link>
-        <Link href="/sign-up" className="btn-secondary">
-          Create account
+        <Link href="/generate" className="btn-secondary">
+          Generate AI copy
         </Link>
       </div>
     </main>

@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+const clerkDomain = process.env.NEXT_PUBLIC_CLERK_DOMAIN || "clerk.accounts.dev";
+const clerkOrigin = `https://${clerkDomain}`;
+
 const nextConfig = {
   reactStrictMode: true,
 
@@ -36,12 +39,12 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.accounts.dev",
+              `script-src 'self' 'unsafe-inline' ${clerkOrigin}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.postforme.dev https://clerk.accounts.dev",
-              "frame-src 'self' https://clerk.accounts.dev",
+              `connect-src 'self' https://api.postforme.dev ${clerkOrigin}`,
+              `frame-src 'self' ${clerkOrigin}`,
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

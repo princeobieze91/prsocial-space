@@ -118,12 +118,13 @@ function createUpstashLimiter(
         });
 
         if (!res.ok) {
-          // Fall back to allowing the request if Redis is unavailable
-          console.warn("Rate limiter Redis unavailable, allowing request");
+          // Upstash was configured but is unreachable: fail closed so the
+          // limiter can't be silently bypassed.
+          console.error("Rate limiter Redis unavailable, denying request");
           return {
-            success: true,
+            success: false,
             limit: requests,
-            remaining: requests - 1,
+            remaining: 0,
             reset: Date.now() + windowMs,
           };
         }
@@ -140,12 +141,12 @@ function createUpstashLimiter(
           reset: Date.now() + ttl,
         };
       } catch {
-        // Fall back to allowing the request if Redis is unavailable
-        console.warn("Rate limiter error, allowing request");
+        // Upstash was configured but errored: fail closed.
+        console.error("Rate limiter error, denying request");
         return {
-          success: true,
+          success: false,
           limit: requests,
-          remaining: requests - 1,
+          remaining: 0,
           reset: Date.now() + windowMs,
         };
       }
